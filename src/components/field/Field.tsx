@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { Application, FederatedPointerEvent, Graphics } from "pixi.js";
+import { Application, FederatedPointerEvent } from "pixi.js";
+import { Player } from "../player/Player";
 
 export default function Field() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -10,6 +11,7 @@ export default function Field() {
     let handlePointerDown: ((event: FederatedPointerEvent) => void) | null = null;
     let moveTicker: (() => void) | null = null;
     let onResize: (() => void) | null = null;
+    let player: Player | null = null;
 
     const keys: Record<string, boolean> = {};
 
@@ -43,25 +45,24 @@ export default function Field() {
         containerRef.current.appendChild(createdApp.canvas);
       }
 
-      const SIZE = 150;
-      const rect = new Graphics();
-      rect.rect(-SIZE / 2, -SIZE / 2, SIZE, SIZE).fill({ color: 0xff0000 });
-      rect.position.set(createdApp.screen.width / 2, createdApp.screen.height / 2);
-      createdApp.stage.addChild(rect);
+      player = new Player(
+        createdApp.screen.width / 2,
+        createdApp.screen.height / 2,
+      );
+      createdApp.stage.addChild(player);
 
-      const clampPosition = () => {
-        const minX = SIZE / 2;
-        const minY = SIZE / 2;
-        const maxX = createdApp.screen.width - SIZE / 2;
-        const maxY = createdApp.screen.height - SIZE / 2;
-        rect.x = Math.max(minX, Math.min(maxX, rect.x));
-        rect.y = Math.max(minY, Math.min(maxY, rect.y));
+      const clampPlayer = () => {
+        if (!player || !app) {
+          return;
+        }
+        player.clamp(app.screen.width, app.screen.height);
       };
 
       handlePointerDown = (event: FederatedPointerEvent) => {
-        const { x, y } = event.global;
-        rect.position.set(x, y);
-        clampPosition();
+        if (player) {
+          player.handlePointerDown(event);
+          clampPlayer();
+        }
       };
 
       createdApp.stage.eventMode = "static";
@@ -71,40 +72,13 @@ export default function Field() {
       window.addEventListener("keydown", onKeyDown, { passive: false });
       window.addEventListener("keyup", onKeyUp);
 
-      const speed = 6;
       const move = () => {
-        let dx = 0;
-        let dy = 0;
-
-        if (keys["arrowleft"]) {
-          dx -= speed;
+        if (!player) {
+          return;
         }
-        if (keys["arrowright"]) {
-          dx += speed;
-        }
-        if (keys["arrowup"]) {
-          dy -= speed;
-        }
-        if (keys["arrowdown"]) {
-          dy += speed;
-        }
-        if (keys["a"]) {
-          dx -= speed;
-        }
-        if (keys["d"]) {
-          dx += speed;
-        }
-        if (keys["w"]) {
-          dy -= speed;
-        }
-        if (keys["s"]) {
-          dy += speed;
-        }
-
-        if (dx !== 0 || dy !== 0) {
-          rect.x += dx;
-          rect.y += dy;
-          clampPosition();
+        const moved = player.move(keys);
+        if (moved) {
+          clampPlayer();
         }
       };
 
@@ -116,7 +90,7 @@ export default function Field() {
           return;
         }
         app.renderer.resize(window.innerWidth, window.innerHeight);
-        clampPosition();
+        clampPlayer();
       };
 
       window.addEventListener("resize", onResize);
@@ -143,6 +117,11 @@ export default function Field() {
         if (handlePointerDown) {
           app.stage.removeEventListener("pointerdown", handlePointerDown);
           handlePointerDown = null;
+        }
+        if (player) {
+          app.stage.removeChild(player);
+          player.destroy();
+          player = null;
         }
         app.destroy(true);
         app = null;
