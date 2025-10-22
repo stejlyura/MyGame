@@ -117,7 +117,7 @@ export default function Field() {
         if (handlePointerDown) {
           app.stage.removeEventListener("pointerdown", handlePointerDown);
           handlePointerDown = null;
-        }
+        } 
         if (player) {
           app.stage.removeChild(player);
           player.destroy();

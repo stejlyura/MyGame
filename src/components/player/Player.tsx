@@ -1,4 +1,7 @@
 import { Graphics, FederatedPointerEvent } from "pixi.js";
+import { useSelector, useDispatch } from 'react-redux'
+import { type RootState } from '@/store/store'
+import { levelUp, takeDamage } from '@/store/playerSlice'
 
 export class Player extends Graphics {
   size = 150;
