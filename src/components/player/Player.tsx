@@ -7,7 +7,7 @@ export class Player extends Graphics {
   constructor(x: number, y: number) {
     super();
     this.rect(-this.size / 2, -this.size / 2, this.size, this.size)
-      .fill({ color: 0xff0000 });
+      .fill({ color: 0x0d3dd9 });
     this.position.set(x, y);
   }
 
